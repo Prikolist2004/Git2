@@ -19,11 +19,10 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-
     private ProgressBar mProgressBar;
     private TextView mTextView;
 
-    private TextView mText;
+    private TextView mTextEdit;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,48 +33,48 @@ public class MainActivity extends AppCompatActivity {
         mTextView = (TextView) findViewById(R.id.textView);
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
         mProgressBar.setVisibility(View.INVISIBLE);
-        mText = (EditText) findViewById(R.id.ET);
+        mTextEdit = (EditText) findViewById(R.id.ET);
     }
 
 
     public void onClick(View view) {
         mProgressBar.setVisibility(View.VISIBLE);
-        mTextView.setText(null);
+
         GithubService gitHubService = GithubService.retrofit.create(GithubService.class);
+        final Call<User> call =
+                gitHubService.getUser(mTextEdit.getText().toString());
 
-        final Call<List<Repos>> call = gitHubService.getRepos(mText.getText().toString());
+        call.enqueue(new Callback<User>() {
+            @Override
+            public void onResponse(Call<User> call, Response<User> response) {
+                // response.isSuccessfull() is true if the response code is 2xx
+                if (response.isSuccessful()) {
+                    User user = response.body();
 
-        call.enqueue(new Callback<List<Repos>>() {
-                         @Override
-                         public void onResponse(Call<List<Repos>> call, Response<List<Repos>> response) {
-                             // response.isSuccessfull() is true if the response code is 2xx
-                             if (response.isSuccessful()) {
-                                 // Выводим массив имён
-                                // mTextView.setText(response.body().toString() + "\n");
-                                 for (int i = 0; i < response.body().size(); i++) {
-                                     // Выводим имена по отдельности
-                                     mTextView.append(response.body().get(i).getName() + "\n");
-                                 }
+                    // Получаем json из github-сервера и конвертируем его в удобный вид
+                    mTextView.setText("Аккаунт Github: " + user.getName() +
+                            "\nСайт: " + user.getBlog() +
+                            "\nКомпания: " + user.getCompany());
 
-                                 mProgressBar.setVisibility(View.INVISIBLE);
-                             } else {
-                                 int statusCode = response.code();
-                                 // Обрабатываем ошибку
-                                 ResponseBody errorBody = response.errorBody();
-                                 try {
-                                     mTextView.setText(errorBody.string());
-                                     mProgressBar.setVisibility(View.INVISIBLE);
-                                 } catch (IOException e) {
-                                     e.printStackTrace();
-                                 }
-                             }
-                         }
+                    mProgressBar.setVisibility(View.INVISIBLE);
+                } else {
+                    int statusCode = response.code();
 
-                         @Override
-                         public void onFailure(Call<List<Repos>> call, Throwable throwable) {
-                             mTextView.setText("Что-то пошло не так: " + throwable.getMessage());
-                         }
-                     }
-        );
+                    // handle request errors yourself
+                    ResponseBody errorBody = response.errorBody();
+                    try {
+                        mTextView.setText(errorBody.string());
+                        mProgressBar.setVisibility(View.INVISIBLE);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<User> call, Throwable throwable) {
+                mTextView.setText("Что-то пошло не так: " + throwable.getMessage());
+            }
+        });
     }
 }

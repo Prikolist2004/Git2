@@ -9,13 +9,15 @@ import retrofit2.http.Path;
 
 interface GithubService {
 
-    // GET /users/:username/repos
-    @GET("users/{username}/repos")
-    Call<List<Repos>> getRepos(@Path("username") String userName);
+    // GET /users/:username
+
+    @GET("/users/{username}")
+    Call<User> getUser(
+            @Path("username") String userName
+    );
 
     Retrofit retrofit = new Retrofit.Builder()
             .baseUrl("https://api.github.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build();
 }
-
